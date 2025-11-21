@@ -3,62 +3,28 @@ import 'package:flutter/material.dart';
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
-  final List<Map<String, dynamic>> opciones = const [
-    {
-      "titulo": "Inicio",
-      "icono": Icons.dashboard,
-      "ruta": "/",
-      "color": Colors.blue,
-    },
-    {
-      "titulo": "Dispositivos",
-      "icono": Icons.memory,
-      "ruta": "/devices",
-      "color": Colors.orange,
-    },
-    {
-      "titulo": "Registrar Dispositivo",
-      "icono": Icons.add_circle,
-      "ruta": "/devices/form",
-      "color": Colors.green,
-    },
-    {
-      "titulo": "Ecosistemas",
-      "icono": Icons.cloud,
-      "ruta": "/ecosistemas",
-      "color": Colors.indigo,
-    },
-    {
-      "titulo": "Monitoreo",
-      "icono": Icons.monitor_heart,
-      "ruta": "/monitor",
-      "color": Colors.red,
-    },
-    {
-      "titulo": "Suscripciones",
-      "icono": Icons.notifications_active,
-      "ruta": "/suscripciones",
-      "color": Colors.cyan,
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final opciones = [
+      {"titulo": "Inicio", "icono": Icons.home, "ruta": "/"},
+      {"titulo": "Dispositivos", "icono": Icons.sensors, "ruta": "/devices"},
+    ];
+
     return Drawer(
       child: Column(
         children: [
           DrawerHeader(
-            decoration: BoxDecoration(color: Colors.black87),
+            decoration: const BoxDecoration(color: Colors.blue),
             child: Row(
-              children: const [
-                Icon(Icons.devices_other, color: Colors.white, size: 40),
-                SizedBox(width: 10),
-                Text(
-                  "FIWARE Ecosystem",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+              children: [
+                const Icon(Icons.hub, color: Colors.white, size: 40),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    "Ecosistema FIWARE",
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleLarge?.copyWith(color: Colors.white),
                   ),
                 ),
               ],
@@ -68,13 +34,13 @@ class AppDrawer extends StatelessWidget {
             child: ListView.builder(
               itemCount: opciones.length,
               itemBuilder: (context, index) {
-                final o = opciones[index];
+                final op = opciones[index];
                 return ListTile(
-                  leading: Icon(o["icono"], color: o["color"]),
-                  title: Text(o["titulo"]),
+                  leading: Icon(op["icono"] as IconData),
+                  title: Text(op["titulo"] as String),
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, o["ruta"]);
+                    Navigator.pushNamed(context, op["ruta"] as String);
                   },
                 );
               },

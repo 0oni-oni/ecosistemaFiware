@@ -29,7 +29,7 @@ class OrionRepository {
 
       return response.data as Map<String, dynamic>;
     } catch (e) {
-      print("🔥 Error consultando Orion: $e");
+      print(" Error consultando Orion: $e");
       return null;
     }
   }

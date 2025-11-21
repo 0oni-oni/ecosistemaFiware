@@ -12,65 +12,87 @@ class DeviceFormView extends StatefulWidget {
 
 class _DeviceFormViewState extends State<DeviceFormView> {
   final _formKey = GlobalKey<FormState>();
-  final _deviceIdController = TextEditingController();
-  final _entityNameController = TextEditingController();
-  final _entityTypeController = TextEditingController(text: 'Sensor');
-  final _protocolController = TextEditingController(text: 'PDI-IoTA-JSON');
 
-  String _transport = 'MQTT'; // o 'HTTP'
+  final _deviceIdCtrl = TextEditingController();
+  final _entityIdCtrl = TextEditingController();
+  final _entityTypeCtrl = TextEditingController(text: 'Sensor');
+  final _nombreModuloCtrl = TextEditingController();
+  final _ubicacionCtrl = TextEditingController();
+  final _exactLocationCtrl = TextEditingController();
+  final _modeloSensorCtrl = TextEditingController();
+  final _datoEnvioCtrl = TextEditingController();
+  final _notaCtrl = TextEditingController();
+
+  String _protocol = 'PDI-IoTA-JSON';
+  String _transport = 'MQTT';
 
   final _repo = FiwareDeviceRepository();
-
-  bool _loading = false;
+  bool _saving = false;
 
   @override
   void dispose() {
-    _deviceIdController.dispose();
-    _entityNameController.dispose();
-    _entityTypeController.dispose();
-    _protocolController.dispose();
+    _deviceIdCtrl.dispose();
+    _entityIdCtrl.dispose();
+    _entityTypeCtrl.dispose();
+    _nombreModuloCtrl.dispose();
+    _ubicacionCtrl.dispose();
+    _exactLocationCtrl.dispose();
+    _modeloSensorCtrl.dispose();
+    _datoEnvioCtrl.dispose();
+    _notaCtrl.dispose();
     super.dispose();
   }
 
-  void _autoFillEntityName() {
-    final id = _deviceIdController.text.trim();
-    if (id.isNotEmpty) {
-      _entityNameController.text = 'Sensor:$id';
+  void _syncEntityId() {
+    if (_entityIdCtrl.text.trim().isEmpty) {
+      final id = _deviceIdCtrl.text.trim();
+      if (id.isNotEmpty) {
+        _entityIdCtrl.text = "Sensor:$id";
+      }
     }
   }
 
-  Future<void> _onSave() async {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _loading = true);
+    setState(() => _saving = true);
+
+    final metadata = <String, dynamic>{
+      "nombre_modulo": _nombreModuloCtrl.text.trim(),
+      "ubicacion": _ubicacionCtrl.text.trim(),
+      "exact_location": _exactLocationCtrl.text.trim(),
+      "modelo_sensor": _modeloSensorCtrl.text.trim(),
+      "dato_envio": _datoEnvioCtrl.text.trim(),
+      "nota": _notaCtrl.text.trim(),
+    }..removeWhere((key, value) => value == null || value.toString().isEmpty);
 
     final device = DeviceModel(
-      deviceId: _deviceIdController.text.trim(),
-      entityName: _entityNameController.text.trim(),
-      entityType: _entityTypeController.text.trim(),
-      protocol: _protocolController.text.trim(),
+      deviceId: _deviceIdCtrl.text.trim(),
+      entityId: _entityIdCtrl.text.trim(),
+      entityType: _entityTypeCtrl.text.trim(),
+      protocol: _protocol,
       transport: _transport,
-      // ya no pasamos attributes ni commands porque el modelo actual no los tiene
+      lastValue: null,
+      lastUpdate: null,
+      metadataInfo: metadata,
     );
 
     try {
       await _repo.registerDevice(device);
+      // FUTURO: enviar también metadata_info a Orion si quieres registrar todo de una vez
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Dispositivo registrado correctamente')),
-      );
-
-      Navigator.pop(context, true);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Dispositivo registrado")));
+      Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al registrar dispositivo: $e')),
+        SnackBar(content: Text("Error al registrar dispositivo: $e")),
       );
     } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -79,14 +101,14 @@ class _DeviceFormViewState extends State<DeviceFormView> {
     final isWide = MediaQuery.of(context).size.width > 700;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Registrar dispositivo FIWARE')),
-      body: Padding(
+      appBar: AppBar(title: const Text("Nuevo dispositivo FIWARE")),
+      body: SingleChildScrollView(
         padding: EdgeInsets.all(isWide ? 32 : 16),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
             child: Card(
-              elevation: 4,
+              elevation: 3,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -98,97 +120,137 @@ class _DeviceFormViewState extends State<DeviceFormView> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       TextFormField(
-                        controller: _deviceIdController,
+                        controller: _deviceIdCtrl,
                         decoration: const InputDecoration(
-                          labelText: 'Device ID',
-                          hintText: 'Ej: temp001, rfid001',
+                          labelText: "Device ID",
+                          hintText: "temp001, rfid001...",
                         ),
-                        textInputAction: TextInputAction.next,
-                        onChanged: (_) => _autoFillEntityName(),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Ingrese un ID de dispositivo';
-                          }
-                          return null;
-                        },
+                        onChanged: (_) => _syncEntityId(),
+                        validator: (v) =>
+                            v == null || v.trim().isEmpty ? "Requerido" : null,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
-                        controller: _entityNameController,
+                        controller: _entityIdCtrl,
                         decoration: const InputDecoration(
-                          labelText: 'Nombre de entidad (Orion)',
-                          hintText: 'Ej: Sensor:temp001',
+                          labelText: "ID de entidad (Orion)",
+                          hintText: "Sensor:temp001",
                         ),
-                        textInputAction: TextInputAction.next,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Ingrese el nombre de la entidad';
-                          }
-                          return null;
-                        },
+                        validator: (v) =>
+                            v == null || v.trim().isEmpty ? "Requerido" : null,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
-                        controller: _entityTypeController,
+                        controller: _entityTypeCtrl,
                         decoration: const InputDecoration(
-                          labelText: 'Tipo de entidad',
-                          hintText: 'Ej: Sensor, Thing',
+                          labelText: "Tipo de entidad",
+                          hintText: "Sensor, Thing...",
                         ),
-                        textInputAction: TextInputAction.next,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Ingrese el tipo de entidad';
-                          }
-                          return null;
-                        },
+                        validator: (v) =>
+                            v == null || v.trim().isEmpty ? "Requerido" : null,
                       ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _protocolController,
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _protocol,
                         decoration: const InputDecoration(
-                          labelText: 'Protocolo',
-                          hintText: 'Ej: PDI-IoTA-JSON',
+                          labelText: "Protocolo",
                         ),
-                        textInputAction: TextInputAction.next,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Ingrese el protocolo';
-                          }
-                          return null;
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'PDI-IoTA-JSON',
+                            child: Text('PDI-IoTA-JSON'),
+                          ),
+                        ],
+                        onChanged: (v) {
+                          if (v != null) setState(() => _protocol = v);
                         },
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         value: _transport,
                         decoration: const InputDecoration(
-                          labelText: 'Transporte',
+                          labelText: "Transporte",
                         ),
                         items: const [
                           DropdownMenuItem(value: 'MQTT', child: Text('MQTT')),
                           DropdownMenuItem(value: 'HTTP', child: Text('HTTP')),
                         ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => _transport = value);
-                          }
+                        onChanged: (v) {
+                          if (v != null) setState(() => _transport = v);
                         },
+                      ),
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Metadatos del dispositivo",
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _nombreModuloCtrl,
+                        decoration: const InputDecoration(
+                          labelText: "Nombre del módulo",
+                          hintText: "Sensor Entrada Principal",
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _ubicacionCtrl,
+                        decoration: const InputDecoration(
+                          labelText: "Ubicación",
+                          hintText: "Laboratorio Redes",
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _exactLocationCtrl,
+                        decoration: const InputDecoration(
+                          labelText: "Lugar exacto",
+                          hintText: "Puerta izquierda, rack superior...",
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _modeloSensorCtrl,
+                        decoration: const InputDecoration(
+                          labelText: "Modelo de sensor",
+                          hintText: "DHT22, MFRC522...",
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _datoEnvioCtrl,
+                        decoration: const InputDecoration(
+                          labelText: "Dato principal enviado",
+                          hintText: "temperatura, humedad, tag...",
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _notaCtrl,
+                        maxLines: 2,
+                        decoration: const InputDecoration(
+                          labelText: "Nota",
+                          hintText: "Comentarios adicionales",
+                        ),
                       ),
                       const SizedBox(height: 24),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: _loading ? null : _onSave,
-                          icon: _loading
+                          onPressed: _saving ? null : _save,
+                          icon: _saving
                               ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
+                                  width: 16,
+                                  height: 16,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                   ),
                                 )
                               : const Icon(Icons.save),
                           label: Text(
-                            _loading ? 'Guardando...' : 'Guardar dispositivo',
+                            _saving ? "Guardando..." : "Registrar dispositivo",
                           ),
                         ),
                       ),

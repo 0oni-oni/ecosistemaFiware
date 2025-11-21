@@ -1,85 +1,44 @@
 import 'package:flutter/material.dart';
+
+import 'devices/device_list_view.dart';
 import 'widgets/app_drawer.dart';
 
 class MenuView extends StatelessWidget {
   const MenuView({super.key});
 
-  final List<Map<String, dynamic>> opciones = const [
-    {
-      "titulo": "Dispositivos",
-      "icono": Icons.devices,
-      "ruta": "/devices",
-      "color": Colors.blue,
-    },
-    {
-      "titulo": "Crear Dispositivo",
-      "icono": Icons.add_circle_outline,
-      "ruta": "/devices/form",
-      "color": Colors.green,
-    },
-    {
-      "titulo": "Monitoreo",
-      "icono": Icons.monitor_heart,
-      "ruta": "/monitor",
-      "color": Colors.red,
-    },
-    {
-      "titulo": "Ecosistemas",
-      "icono": Icons.cloud,
-      "ruta": "/ecosistemas",
-      "color": Colors.indigo,
-    },
-    {
-      "titulo": "Suscripciones",
-      "icono": Icons.notifications_active,
-      "ruta": "/suscripciones",
-      "color": Colors.teal,
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final isWide = MediaQuery.of(context).size.width > 700;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Ecosistema FIWARE"),
-        backgroundColor: Colors.black87,
-        foregroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: const Text("Panel Ecosistema FIWARE")),
       drawer: const AppDrawer(),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: GridView.builder(
-          itemCount: opciones.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 15,
-            mainAxisSpacing: 15,
+      body: Center(
+        child: Padding(
+          padding: EdgeInsets.all(isWide ? 32 : 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.hub, size: 80, color: Colors.blue),
+              const SizedBox(height: 16),
+              Text(
+                "SmartLab UTC - Monitoreo FIWARE",
+                style: Theme.of(context).textTheme.titleLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const DeviceListView()),
+                  );
+                },
+                icon: const Icon(Icons.sensors),
+                label: const Text("Ver dispositivos"),
+              ),
+            ],
           ),
-          itemBuilder: (context, index) {
-            final o = opciones[index];
-            return Card(
-              elevation: 10,
-              color: o["color"],
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(20),
-                onTap: () => Navigator.pushNamed(context, o["ruta"]),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(o["icono"], size: 50, color: Colors.white),
-                    const SizedBox(height: 10),
-                    Text(
-                      o["titulo"],
-                      style: const TextStyle(fontSize: 20, color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
         ),
       ),
     );

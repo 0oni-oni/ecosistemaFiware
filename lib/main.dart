@@ -1,4 +1,3 @@
-import 'package:ecosistema/views/ecosystems/ecosystem_list_view.dart';
 import 'package:flutter/material.dart';
 
 import 'views/menu_view.dart';
@@ -6,29 +5,26 @@ import 'views/devices/device_list_view.dart';
 import 'views/devices/device_form_view.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const EcosistemaApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class EcosistemaApp extends StatelessWidget {
+  const EcosistemaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'Ecosistema FIWARE',
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
+      ),
       initialRoute: '/',
       routes: {
-        '/': (context) => const MenuView(),
-
-        // Dispositivos
-        '/devices': (context) => const DeviceListView(),
-        '/devices/form': (context) => const DeviceFormView(),
-        '/ecosistemas': (context) => const EcosystemListView(),
-
-        // Estas se agregarán más adelante
-        // '/ecosistemas': (_) => EcosystemListView(),
-        // '/monitor': (_) => MonitorDashboardView(),
-        // '/suscripciones': (_) => SubscriptionListView(),
+        '/': (_) => const MenuView(),
+        '/devices': (_) => const DeviceListView(),
+        '/devices/new': (_) => const DeviceFormView(),
       },
     );
   }

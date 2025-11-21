@@ -8,13 +8,11 @@ class FiwareDeviceRepository implements DeviceRepository {
   final Dio _dio = Dio();
 
   FiwareDeviceRepository() {
-    // Timeouts mejorados para FIWARE
     _dio.options.connectTimeout = const Duration(seconds: 30);
     _dio.options.receiveTimeout = const Duration(seconds: 30);
     _dio.options.sendTimeout = const Duration(seconds: 30);
   }
 
-  /// Encabezados FIWARE
   Map<String, String> _headers() {
     final eco = AppSettings.current;
     return {
@@ -24,83 +22,83 @@ class FiwareDeviceRepository implements DeviceRepository {
     };
   }
 
-  // ==========================================================
-  // GET DEVICES (LISTADO)
-  // ==========================================================
   @override
   Future<List<DeviceModel>> getDevices() async {
     final eco = AppSettings.current;
-
-    final url = '${eco.iotAgentBaseUrl}/iot/devices?limit=100';
-
-    print("📡 Consultando dispositivos desde: $url");
+    final url = "${eco.orionBaseUrl}/v2/entities?type=Sensor&options=keyValues";
 
     try {
-      final response = await _dio.get(
-        url,
-        options: Options(headers: _headers()),
-      );
+      final res = await _dio.get(url, options: Options(headers: _headers()));
 
-      print("📨 Respuesta de FIWARE → Status: ${response.statusCode}");
-
-      final json = response.data;
-
-      if (json == null || json is! Map) {
-        print("⚠ Respuesta inesperada: $json");
-        return [];
+      if (res.statusCode == 200 && res.data is List) {
+        final list = res.data as List;
+        return list
+            .map(
+              (e) => DeviceModel.fromOrionKeyValues(e as Map<String, dynamic>),
+            )
+            .toList();
       }
-
-      if (json['devices'] == null) {
-        print("ℹ No hay dispositivos registrados");
-        return [];
-      }
-
-      final list = json['devices'] as List<dynamic>;
-
-      final devices = list
-          .map((e) => DeviceModel.parseMap(e as Map<String, dynamic>))
-          .toList();
-
-      print("✅ Total dispositivos: ${devices.length}");
-      return devices;
+      return [];
     } catch (e) {
-      print("🔥 Error en GET /iot/devices: $e");
-      throw Exception("No se pudo obtener la lista de dispositivos.");
+      print("Error getDevices: $e");
+      return [];
     }
   }
 
-  // ==========================================================
-  // REGISTER DEVICE
-  // ==========================================================
   @override
   Future<void> registerDevice(DeviceModel device) async {
     final eco = AppSettings.current;
-    final url = '${eco.iotAgentBaseUrl}/iot/devices';
+    final url = "${eco.iotAgentBaseUrl}/iot/devices";
 
     final payload = {
-      "devices": [device.toJson()],
+      "devices": [device.toIoTAgentJson()],
     };
 
-    print("📡 Registrando dispositivo en: $url");
-    print("📦 Payload → $payload");
+    print("POST $url");
+    print("Payload: $payload");
 
     try {
-      final response = await _dio.post(
+      await _dio.post(
         url,
         data: payload,
         options: Options(headers: _headers()),
       );
-
-      print("📨 Respuesta FIWARE: ${response.statusCode}");
     } catch (e) {
-      print("🔥 Error al registrar dispositivo: $e");
-      throw Exception("No se pudo registrar el dispositivo.");
+      print("Error registerDevice: $e");
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> updateMetadata(DeviceModel device) async {
+    final eco = AppSettings.current;
+    final url = "${eco.orionBaseUrl}/v2/entities/${device.entityId}/attrs";
+
+    final payload = {
+      "metadata_info": {
+        "type": "StructuredValue",
+        "value": device.toMetadataInfoValue(),
+      },
+    };
+
+    print("PATCH $url");
+    print("Payload: $payload");
+
+    try {
+      await _dio.patch(
+        url,
+        data: payload,
+        options: Options(headers: _headers()),
+      );
+    } catch (e) {
+      print("Error updateMetadata: $e");
+      rethrow;
     }
   }
 
   @override
   Future<void> deleteDevice(String deviceId) async {
-    // FUTURO:
-    // DELETE /iot/devices/{deviceId}
+    // FUTURO: DELETE en IoT Agent / Orion
+    // por ahora, no implementamos borrado
   }
 }

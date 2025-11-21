@@ -1,13 +1,9 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
-
-import 'package:ionicons/ionicons.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../models/device_model.dart';
 import '../../repositories/fiware_device_repository.dart';
-import '../../repositories/orion_repository.dart';
-import 'device_form_view.dart';
 
 class DeviceListView extends StatefulWidget {
   const DeviceListView({super.key});
@@ -18,23 +14,21 @@ class DeviceListView extends StatefulWidget {
 
 class _DeviceListViewState extends State<DeviceListView> {
   final repo = FiwareDeviceRepository();
-  final orion = OrionRepository();
 
   List<DeviceModel> devices = [];
-  Map<String, Map<String, dynamic>> entityData = {};
-
   bool loading = true;
+
   Timer? refreshTimer;
 
   @override
   void initState() {
     super.initState();
-    _loadDevices();
+    _load();
 
-    // 🔄 actualización cada 0.5s
-    refreshTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
-      _refreshEntities();
-    });
+    refreshTimer = Timer.periodic(
+      const Duration(milliseconds: 500),
+      (_) => _load(),
+    );
   }
 
   @override
@@ -43,36 +37,28 @@ class _DeviceListViewState extends State<DeviceListView> {
     super.dispose();
   }
 
-  Future<void> _loadDevices() async {
-    setState(() => loading = true);
-
+  Future<void> _load() async {
     final data = await repo.getDevices();
-    devices = data;
+    if (!mounted) return;
 
-    await _refreshEntities();
-    setState(() => loading = false);
+    setState(() {
+      devices = data;
+      loading = false;
+    });
   }
 
-  Future<void> _refreshEntities() async {
-    for (var d in devices) {
-      final entity = await orion.getEntity(d.entityName);
-      if (entity != null) {
-        setState(() => entityData[d.entityName] = entity);
-      }
-    }
+  String formatToEcuador(DateTime? dt) {
+    if (dt == null) return "—";
+    final ecu = dt.toUtc().subtract(const Duration(hours: 5));
+    return DateFormat('yyyy-MM-dd HH:mm:ss').format(ecu);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.of(context).size.width > 700;
+    final isWide = MediaQuery.of(context).size.width > 900;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Dispositivos FIWARE"),
-        backgroundColor: Colors.black87,
-        foregroundColor: Colors.white,
-      ),
-
+      appBar: AppBar(title: const Text("Dispositivos FIWARE")),
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : devices.isEmpty
@@ -84,149 +70,100 @@ class _DeviceListViewState extends State<DeviceListView> {
                   crossAxisCount: isWide ? 3 : 1,
                   crossAxisSpacing: 16,
                   mainAxisSpacing: 16,
-                  childAspectRatio: isWide ? 1.35 : 2.4,
+                  childAspectRatio: isWide ? 1.4 : 2.5,
                 ),
                 itemCount: devices.length,
                 itemBuilder: (context, index) {
                   final d = devices[index];
-                  final entity = entityData[d.entityName];
-
-                  final temp = entity?["temperature"]?["value"];
-                  final instant =
-                      entity?["temperature"]?["metadata"]?["TimeInstant"]?["value"];
-
-                  DateTime? ecuTime;
-                  if (instant != null) {
-                    final utc = DateTime.parse(instant);
-                    ecuTime = utc.subtract(const Duration(hours: 5));
-                  }
-
-                  // ONLINE / OFFLINE
-                  bool isOnline = false;
-                  if (ecuTime != null) {
-                    final diff = DateTime.now().difference(ecuTime).inSeconds;
-                    isOnline = diff < 10;
-                  }
-
-                  // COLOR E ICONO PARA TEMPERATURA
-                  Color tempColor = Colors.green;
-                  IconData tempIcon = Ionicons.thermometer_outline;
-
-                  if (temp != null) {
-                    if (temp < 15) {
-                      tempColor = Colors.blue.shade600;
-                      tempIcon = Ionicons.snow_outline;
-                    } else if (temp <= 25) {
-                      tempColor = Colors.green.shade700;
-                      tempIcon = Ionicons.thermometer_outline;
-                    } else if (temp <= 35) {
-                      tempColor = Colors.orange.shade700;
-                      tempIcon = Ionicons.flame_outline;
-                    } else {
-                      tempColor = Colors.red.shade800;
-                      tempIcon = Ionicons.warning_outline;
-                    }
-                  }
 
                   return Card(
-                    elevation: 5,
+                    elevation: 3,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // HEADER
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  d.entityName,
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
+                        // FUTURO: navegar a detalle
+                        // Navigator.push(... DeviceDetailView(device: d));
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              d.displayName,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              d.ubicacion,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                              ),
+                            ),
+                            if (d.exactLocation.isNotEmpty)
+                              Text(
+                                d.exactLocation,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.black54,
                                 ),
                               ),
-                              Icon(
-                                isOnline
-                                    ? Ionicons.wifi_outline
-                                    : Ionicons.cloud_offline_outline,
-                                color: isOnline ? Colors.green : Colors.grey,
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 10),
-
-                          Text("ID: ${d.deviceId}"),
-                          Text("Tipo: ${d.entityType}"),
-                          Text("Protocolo: ${d.protocol}"),
-                          Text("Transporte: ${d.transport}"),
-
-                          const SizedBox(height: 15),
-
-                          // TEMPERATURA + ICONO + ANIMACIÓN
-                          Row(
-                            children: [
-                              Icon(tempIcon, color: tempColor, size: 26),
-                              const SizedBox(width: 8),
-                              Text(
-                                    temp != null
-                                        ? "${temp.toString()} °C"
-                                        : "N/A",
-                                    style: TextStyle(
-                                      fontSize: 20,
+                            const SizedBox(height: 8),
+                            Text("Entidad: ${d.entityId}"),
+                            Text("Tipo: ${d.entityType}"),
+                            const SizedBox(height: 8),
+                            if (d.lastValue != null)
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.sensors,
+                                    color: Colors.green,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    "${d.lastValue}",
+                                    style: const TextStyle(
+                                      fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: tempColor,
+                                      color: Colors.green,
                                     ),
-                                  )
-                                  .animate()
-                                  .fadeIn(duration: 300.ms)
-                                  .scale(duration: 300.ms),
-                            ],
-                          ),
-
-                          const SizedBox(height: 6),
-
-                          Text(
-                            ecuTime != null
-                                ? "Actualizado: ${ecuTime.toString().split('.').first}"
-                                : "Actualizado: N/A",
-                            style: TextStyle(color: Colors.grey.shade700),
-                          ),
-
-                          const Spacer(),
-
-                          Align(
-                            alignment: Alignment.bottomRight,
-                            child: Icon(
-                              Ionicons.pulse_outline,
-                              color: Colors.blue.shade700,
-                              size: 30,
+                                  ),
+                                ],
+                              ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Actualizado: ${formatToEcuador(d.lastUpdate)}",
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                              ),
                             ),
-                          ),
-                        ],
+                            const Spacer(),
+                            Align(
+                              alignment: Alignment.bottomRight,
+                              child: Icon(
+                                Icons.device_hub,
+                                color: Colors.blue.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
                 },
               ),
             ),
-
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: Colors.deepPurple,
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const DeviceFormView()),
-          );
-          _loadDevices();
+        onPressed: () {
+          Navigator.pushNamed(context, '/devices/new');
         },
-        label: const Text("Nuevo Dispositivo"),
         icon: const Icon(Icons.add),
+        label: const Text("Nuevo dispositivo"),
       ),
     );
   }
