@@ -23,7 +23,7 @@ Si no tienes Orion ejecutándose, puedes iniciarlo con Docker:
 
 ```bash
 # Con MongoDB en la misma máquina
-docker run -d --name mongodb mongo:4.4
+docker run -d --name mongodb mongo:6.0
 docker run -d --name orion -p 1026:1026 --link mongodb:mongodb fiware/orion:latest -dbhost mongodb
 
 # O con Docker Compose (recomendado - usa el archivo docker-compose.yml incluido)
