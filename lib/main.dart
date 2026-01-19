@@ -1,30 +1,95 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
-
-import 'views/menu_view.dart';
-import 'views/devices/device_list_view.dart';
-import 'views/devices/device_form_view.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'; // ✅ AGREGAR
+import 'package:intl/intl.dart'; // ✅ AGREGAR
+import 'package:provider/provider.dart';
+import 'repositories/auth_repository.dart';
+import 'repositories/personas_repository.dart';
+import 'repositories/tarjetas_repository.dart';
+import 'repositories/dispositivos_repository.dart';
+import 'repositories/historial_repository.dart';
+import 'repositories/analytics_repository.dart';
+import 'views/menu.dart';
+import 'views/login_view.dart';
+import 'repositories/crate_repository.dart';
 
 void main() {
-  runApp(const EcosistemaApp());
+  Intl.defaultLocale = 'es_ES'; // ✅ AGREGAR
+  runApp(const Ecosistema());
 }
 
-class EcosistemaApp extends StatelessWidget {
-  const EcosistemaApp({super.key});
+class Ecosistema extends StatelessWidget {
+  const Ecosistema({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Ecosistema FIWARE',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthRepository()),
+        ChangeNotifierProvider(create: (_) => PersonasRepository()),
+        ChangeNotifierProvider(create: (_) => TarjetasRepository()),
+        ChangeNotifierProvider(create: (_) => DispositivosRepository()),
+        ChangeNotifierProvider(create: (_) => HistorialRepository()),
+        ChangeNotifierProvider(create: (_) => AnalyticsRepository()),
+        ChangeNotifierProvider(create: (_) => CrateRepository()),
+      ],
+      child: MaterialApp(
+        title: 'SmartLab FIWARE',
+        debugShowCheckedModeBanner: false,
+        themeMode: ThemeMode.system,
+
+        // ✅ AGREGAR localizationsDelegates
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('es', 'ES'), Locale('en', 'US')],
+        locale: const Locale('es', 'ES'), // ✅ AGREGAR
+
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.blue,
+            brightness: Brightness.light,
+          ),
+          visualDensity: VisualDensity.adaptivePlatformDensity,
+          appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
+          cardTheme: CardThemeData(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          inputDecorationTheme: InputDecorationTheme(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            filled: true,
+          ),
+        ),
+        darkTheme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.blue,
+            brightness: Brightness.dark,
+          ),
+        ),
+        home: const AuthWrapper(),
       ),
-      initialRoute: '/',
-      routes: {
-        '/': (_) => const MenuView(),
-        '/devices': (_) => const DeviceListView(),
-        '/devices/new': (_) => const DeviceFormView(),
+    );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthRepository>(
+      builder: (context, auth, _) {
+        if (auth.isAuthenticated) {
+          return const MenuPrincipal();
+        }
+        return const LoginView();
       },
     );
   }
