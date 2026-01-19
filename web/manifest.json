@@ -1,0 +1,11 @@
+{
+    "name": "ecosistema_fiware",
+    "short_name": "FIWARE",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#0175C2",
+    "theme_color": "#0175C2",
+    "description": "Ecosistema FIWARE - Una aplicación Flutter",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false
+}
