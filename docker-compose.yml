@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  # MongoDB - Base de datos para Orion
+  mongo:
+    image: mongo:4.4
+    hostname: mongo
+    container_name: db-mongo
+    expose:
+      - "27017"
+    ports:
+      - "27017:27017"
+    command: --nojournal
+    networks:
+      - fiware
+
+  # Orion Context Broker
+  orion:
+    image: fiware/orion:latest
+    hostname: orion
+    container_name: fiware-orion
+    depends_on:
+      - mongo
+    expose:
+      - "1026"
+    ports:
+      - "1026:1026"
+    command: -dbhost mongo -logLevel DEBUG
+    networks:
+      - fiware
+    healthcheck:
+      test: curl --fail -s http://orion:1026/version || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  fiware:
+    driver: bridge
