@@ -93,10 +93,12 @@ ecosistemaFiware/
 ├── app.js              # Aplicación principal con demo
 ├── fiwareClient.js     # Cliente para interactuar con Orion
 ├── cleanup.js          # Script para limpiar entidades de prueba
+├── ejemplo.js          # Ejemplo de uso programático
+├── docker-compose.yml  # Configuración Docker para Orion y MongoDB
 ├── package.json        # Dependencias del proyecto
 ├── .env.example        # Ejemplo de configuración
-├── .gitignore         # Archivos ignorados por git
-└── README.md          # Este archivo
+├── .gitignore          # Archivos ignorados por git
+└── README.md           # Este archivo
 ```
 
 ## 🔧 API del Cliente FIWARE
