@@ -26,20 +26,8 @@ Si no tienes Orion ejecutándose, puedes iniciarlo con Docker:
 docker run -d --name mongodb mongo:4.4
 docker run -d --name orion -p 1026:1026 --link mongodb:mongodb fiware/orion:latest -dbhost mongodb
 
-# O con Docker Compose (más sencillo)
-# Crear un archivo docker-compose.yml con:
-version: "3.8"
-services:
-  mongo:
-    image: mongo:4.4
-    command: --nojournal
-  orion:
-    image: fiware/orion:latest
-    ports:
-      - "1026:1026"
-    depends_on:
-      - mongo
-    command: -dbhost mongo
+# O con Docker Compose (recomendado - usa el archivo docker-compose.yml incluido)
+docker-compose up -d
 ```
 
 ## 📦 Instalación
