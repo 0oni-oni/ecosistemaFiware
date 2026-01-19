@@ -3,7 +3,7 @@ version: "3.8"
 services:
   # MongoDB - Base de datos para Orion
   mongo:
-    image: mongo:4.4
+    image: mongo:6.0
     hostname: mongo
     container_name: db-mongo
     expose:

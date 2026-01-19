@@ -75,7 +75,7 @@ class FiwareClient {
   async updateAttribute(entityId, attributeName, value) {
     try {
       // Determinar el Content-Type basado en el tipo de valor
-      const contentType = typeof value === 'object' ? 'application/json' : 'text/plain';
+      const contentType = (typeof value === 'object' && value !== null) ? 'application/json' : 'text/plain';
       
       const response = await axios.put(
         `${this.orionUrl}/v2/entities/${entityId}/attrs/${attributeName}/value`,
